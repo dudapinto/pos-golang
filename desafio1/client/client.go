@@ -11,7 +11,7 @@ import (
 )
 
 func fetchCotacao() (string, error) {
-	url := "http://localhost:8080/cotacao" // Substitua pelo seu endpoint real
+	url := "http://localhost:8080/cotacao" // Substituir pelo endpoint real de onde for publicado.
 
 	// Crie um contexto com timeout de 300 ms
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
