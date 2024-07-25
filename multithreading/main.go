@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -13,6 +14,7 @@ type ViaCEPResponse struct {
 	Cep         string `json:"cep"`
 	Logradouro  string `json:"logradouro"`
 	Complemento string `json:"complemento"`
+	Unidade     string `json:"unidade"`
 	Bairro      string `json:"bairro"`
 	Localidade  string `json:"localidade"`
 	UF          string `json:"uf"`
@@ -40,31 +42,41 @@ type ApiResponse struct {
 func consultarAPI(ctx context.Context, apiURL, cep, source string, ch chan<- ApiResponse, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	apiForRequest := apiURL + cep
+	via := strings.Index(apiURL, "viacep")
+	if via != -1 {
+		apiForRequest += "/json/"
+	}
+
 	start := time.Now()
-	req, err := http.NewRequest("GET", apiURL+cep, nil)
+
+	req, err := http.NewRequest("GET", apiForRequest, nil)
 	if err != nil {
+		fmt.Println("Erro ao criar requisição:", err)
 		return
 	}
 
 	req = req.WithContext(ctx)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		fmt.Println("Erro ao fazer requisição:", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	var response interface{}
-	if apiURL == "https://brasilapi.com.br/api/cep/v1/" {
+	if via == -1 { // BrasilAPI
 		var brasilAPIResp BrasilAPIResponse
 		err = json.NewDecoder(resp.Body).Decode(&brasilAPIResp)
 		response = brasilAPIResp
-	} else {
+	} else { // ViaCep
 		var viaCEPResp ViaCEPResponse
 		err = json.NewDecoder(resp.Body).Decode(&viaCEPResp)
 		response = viaCEPResp
 	}
 
 	if err != nil {
+		fmt.Println("Erro ao decodificar resposta:", err)
 		return
 	}
 
@@ -74,18 +86,25 @@ func consultarAPI(ctx context.Context, apiURL, cep, source string, ch chan<- Api
 		Time:     elapsed,
 		Source:   source,
 	}
+	fmt.Println("Resposta recebida de", source)
 }
 
 func main() {
 	cep := "01153000"
 	api1 := "https://brasilapi.com.br/api/cep/v1/"
-	api2 := "http://viacep.com.br/ws/"
+	api2 := "https://viacep.com.br/ws/"
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
 	ch := make(chan ApiResponse)
 	var wg sync.WaitGroup
+
+	// ============================================================================
+	// 	ATENÇÃO: Se ao testar, vc comentar uma das APIs, não se esqueça de
+	//           alterar tb wg.Add(2) <== para 1 ou wg.wait() nunca vai completar
+	//	  		 e vai parecer que travou e não houve response, ok?  ;)
+	// ============================================================================
 	wg.Add(2)
 
 	go consultarAPI(ctx, api1, cep, "BrasilAPI", ch, &wg)
@@ -101,6 +120,7 @@ func main() {
 	var fastestResponse interface{}
 
 	for resp := range ch {
+		fmt.Printf("Recebido de %s em %s\n", resp.Source, resp.Time)
 		if fastestTime == 0 || resp.Time < fastestTime {
 			fastestTime = resp.Time
 			fastestAPI = resp.Source
