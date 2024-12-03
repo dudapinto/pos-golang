@@ -1,0 +1,12 @@
+{
+    "sqltools.useNodeRuntime": true,
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "desafio1",
+            "group": "pos-golang",
+            "database": "cotacoes.db"
+        }
+    ]
+}

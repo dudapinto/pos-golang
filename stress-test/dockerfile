@@ -1,0 +1,28 @@
+
+# Etapa 1: Build (imagem base com Go para compilar o binário)
+FROM golang:1.23.3 as builder
+
+# Defina o diretório de trabalho
+WORKDIR /app
+
+# Copie os arquivos de módulo Go
+COPY go.mod go.sum ./
+
+# Dependências antes de copiar o código (cache eficiente)
+ENV GOPROXY=direct
+RUN go mod download
+
+# Copie o código do projeto para o diretório de trabalho
+COPY main.go .
+
+# Compile o binário do Go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o main main.go
+
+# Etapa 2: Runtime (imagem final baseada em scratch)
+FROM scratch
+
+# Copie o binário compilado da etapa anterior
+COPY --from=builder /app/main /main
+
+# Defina o comando padrão para executar o binário
+ENTRYPOINT ["/main"]

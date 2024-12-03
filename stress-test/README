@@ -1,0 +1,32 @@
+# Stress Test - Ferramenta Simples de Teste de Performance
+Este projeto é uma ferramenta simples para realizar stress tests em uma URL fornecida, com contagem de requisições e exibição do progresso durante o teste.
+
+## Pré-requisitos
+- Docker
+- Go (para desenvolvimento local)
+
+## Estrutura do Projeto
+O projeto contém os seguintes arquivos principais:
+- `main.go`: Código Go que realiza o stress test em uma URL fornecida.
+- `Dockerfile`: Arquivo para construir a imagem Docker e executar o código Go.
+
+## Como Buildar a Imagem Docker
+docker buildx build -t stress-test .
+
+## Como rodar para testar
+docker run --rm stress-test --url=http://google.com --concurrency=10 --requests=100
+
+O resultado esperado é similar ao que segue:
+===================================
+Iniciando o Stress Test
+===================================
+Testando URL: http://google.com
+Número de requisições: 100
+Concorrência: 10
+===================================
+Requests realizados: 100/100
+===================================
+Tempo total gasto: 5.806411522s
+Quantidade total de requests realizados: 100
+Quantidade de requests com status HTTP 200: 100
+2024/11/30 19:50:09 Teste finalizado...
