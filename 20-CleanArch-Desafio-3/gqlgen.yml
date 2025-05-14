@@ -4,8 +4,8 @@ schema:
 
 # Where should the generated server code go?
 exec:
-  filename: generated.go
-  package: internal/infra/graph
+  filename: internal/infra/graph/generated.go
+  package: graph
 
 # Uncomment to enable federation
 # federation:
@@ -17,14 +17,14 @@ exec:
 
 # Where should any generated models go?
 model:
-  filename: models_gen.go
-  package: internal/infra/graph/model
+  filename: internal/infra/graph/model/models_gen.go
+  package: model
 
 # Where should the resolver implementations go?
 resolver:
   layout: follow-schema
-  dir: internal/infra/graph
-  package: internal/infra/graph
+  dir: internal/infra/graph/resolver
+  package: resolver
   filename_template: "{name}.resolvers.go"
   # Optional: turn on to not generate template comments above resolvers
   # omit_template_comment: false
@@ -66,17 +66,13 @@ resolver:
 # Optional: set to skip running `go mod tidy` when generating server code
 # skip_mod_tidy: true
 
-# Optional: if this is set to true, argument directives that
-# decorate a field with a null value will still be called.
-#
-# This enables argumment directives to not just mutate
-# argument values but to set them even if they're null.
-call_argument_directives_with_null: true
+# Optional: set to speed up generation time by not performing a final validation pass.
+skip_validation: true
 
 # gqlgen will search for any type names in the schema in these go packages
 # if they match it will use them, otherwise it will generate them.
 autobind:
-#  - "github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/infra/graph/model"
+  - "github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/infra/graph/model"
 
 # This section declares type mapping between the GraphQL and go type systems
 #

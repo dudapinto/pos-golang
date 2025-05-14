@@ -7,26 +7,32 @@ import (
 	"github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/usecase"
 )
 
-type ListOrdersService struct {
-	pb.UnimplementedListOrdersServiceServer
+type OrderService struct {
+	pb.UnimplementedOrderServiceServer
 	ListOrdersUseCase usecase.ListOrdersUseCase
 }
 
-func NewListOrdersService(ListOrdersUseCase usecase.ListOrdersUseCase) *ListOrdersService {
-	return &ListOrdersService{
+func NewOrderService(ListOrdersUseCase usecase.ListOrdersUseCase) *OrderService {
+	return &OrderService{
 		ListOrdersUseCase: ListOrdersUseCase,
 	}
 }
 
-func (s *ListOrdersService) ListOrders(ctx context.Context, in *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
+func (s *OrderService) ListOrders(ctx context.Context, in *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
 	output, err := s.ListOrdersUseCase.Execute()
 	if err != nil {
 		return nil, err
 	}
+	var orders []*pb.Order
+	for _, order := range output {
+		orders = append(orders, &pb.Order{
+			Id:         order.ID,
+			Price:      float32(order.Price),
+			Tax:        float32(order.Tax),
+			FinalPrice: float32(order.FinalPrice),
+		})
+	}
 	return &pb.ListOrdersResponse{
-		Id:         output.ID,
-		Price:      float32(output.Price),
-		Tax:        float32(output.Tax),
-		FinalPrice: float32(output.FinalPrice),
+		Orders: orders,
 	}, nil
 }

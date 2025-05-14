@@ -1,6 +1,6 @@
 syntax = "proto3";
 package pb;
-option go_package = "internal/infra/grpc/pb";
+option go_package = "github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/infra/grpc/pb";
 
 message CreateOrderRequest {
   string id = 1;

@@ -9,12 +9,12 @@ import (
 	graphql_handler "github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/configs"
+	"github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/event"
 	"github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/event/handler"
 	"github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/infra/graph"
 	"github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/infra/grpc/pb"
 	"github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/infra/grpc/service"
 	"github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/infra/web/webserver"
-	"github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/internal/usecase"
 	"github.com/dudapinto/pos-golang/20-CleanArch-Desafio-3/pkg/events"
 	"github.com/streadway/amqp"
 	"google.golang.org/grpc"
@@ -50,7 +50,9 @@ func main() {
 	listOrdersUseCase := NewListOrdersUseCase(db, eventDispatcher)
 
 	webserver := webserver.NewWebServer(configs.WebServerPort)
-	webOrderHandler := NewWebOrderHandler(db, eventDispatcher)
+	orderCreatedEvent := &event.OrderCreated{}
+	ordersListedEvent := &event.OrdersListed{}
+	webOrderHandler := NewWebOrderHandler(eventDispatcher, db, orderCreatedEvent, ordersListedEvent)
 	webserver.AddHandler("/order", webOrderHandler.Create)
 	webserver.AddHandler("/list_orders", webOrderHandler.List)
 
@@ -59,9 +61,9 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	createOrderService := service.NewOrderService(*createOrderUseCase)
-	listOrdersService := service.NewListOrdersService(*&usecase.ListOrdersUseCase{})
+	listOrdersService := service.NewListOrdersService(*listOrdersUseCase)
 	pb.RegisterOrderServiceServer(grpcServer, createOrderService)
-	pb.RegisterOrderServiceServer(grpcServer, listOrdersService)
+	pb.RegisterListOrdersServiceServer(grpcServer, listOrdersService)
 	reflection.Register(grpcServer)
 
 	fmt.Println("Starting gRPC server on port", configs.GRPCServerPort)
@@ -73,6 +75,7 @@ func main() {
 
 	srv := graphql_handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
 		CreateOrderUseCase: *createOrderUseCase,
+		ListOrdersUseCase:  *listOrdersUseCase,
 	}}))
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
@@ -82,7 +85,7 @@ func main() {
 }
 
 func getRabbitMQChannel() *amqp.Channel {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
 	if err != nil {
 		panic(err)
 	}

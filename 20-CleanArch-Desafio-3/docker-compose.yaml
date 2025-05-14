@@ -12,7 +12,7 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - .docker/mysql:/var/lib/mysql
+      - ./migrations:/docker-entrypoint-initdb.d
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -24,3 +24,25 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+      
+  app:
+    build: .
+    container_name: app
+    restart: always
+    ports:
+      - 8000:8000
+      - 50051:50051
+      - 8080:8080
+    depends_on:
+      - mysql
+      - rabbitmq
+    environment:
+      DB_DRIVER: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: orders
+      WEB_SERVER_PORT: :8000
+      GRPC_SERVER_PORT: 50051
+      GRAPHQL_SERVER_PORT: 8080
